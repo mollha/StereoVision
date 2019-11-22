@@ -67,16 +67,17 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 # colour: to draw detection rectangle in
 
 
-def drawPred(image, class_name, box, z_mode):
+def drawPred(image, class_name, box, distance_prediction):
     # params describes the amount of scaling in each of the rgb channels to produce a different color for each class
-    params = {"car": (0.90, 0.85, 0.678), "person": (0.20, 0.35, 0.978), "truck": (0.75, 1, 1)}
+    distance_prediction -= 1.1  # subtract avg car bonnet length
+    params = {"car": (1, 0.85, 0.678), "person": (0, 0, 1), "truck": (0.33, 1, 0.5)}
     if class_name in params:
         colour_scale = params[class_name]
     else:
         colour_scale = (0.90, 0.85, 0.678)
 
     # choose colour depending on distance away
-    tone = 255 - (min(z_mode, 50)/50)*255
+    tone = 255 - (min(distance_prediction, 50)/50)*255
     colour = (tone * colour_scale[0], tone * colour_scale[1], tone * colour_scale[2])
 
     # Draw a bounding box.
@@ -84,13 +85,15 @@ def drawPred(image, class_name, box, z_mode):
     left, top, width, height = box
     cv2.rectangle(image, (left, top), (left + width, top + height), colour, 2)
 
-    label = '%s:%.2fm' % (class_name, z_mode)     # construct label
+    label = '%s:%.2fm' % (class_name, distance_prediction)     # construct label
 
     # Display the label at the top of the bounding box
     labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
     top = max(top, labelSize[1])
     cv2.rectangle(image, (left, top - round(1.5*labelSize[1])),
         (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv2.FILLED)
+    cv2.rectangle(image, (left, top - round(1.5*labelSize[1])), (left + round(1.5*labelSize[0]), top + baseLine),
+                  (0, 0, 0))
     cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1, cv2.LINE_AA)
 
 
@@ -143,11 +146,9 @@ def postprocess(image, results, threshold_confidence, threshold_nms):
 # net : an OpenCV DNN module network object
 
 
-# define display window name + trackbar
+# define display window name
 windowName = 'Stereo Vision with Distance Ranging'
 cv2.namedWindow(windowName, cv2.WINDOW_NORMAL)
-trackbarName = 'reporting confidence > (x 0.01)'
-cv2.createTrackbar(trackbarName, windowName, 0, 100, lambda: None)
 
 ################################################################################
 
@@ -341,7 +342,6 @@ for filename_left in left_file_list:
         results = net.forward(output_layer_names)
 
         # remove the bounding boxes with low confidence
-        confThreshold = cv2.getTrackbarPos(trackbarName, windowName) / 100
         detected_objects = postprocess(imgL, results, confThreshold, nmsThreshold)
 
         # Calculate the depths of objects detected in the scene
