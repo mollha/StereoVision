@@ -68,9 +68,16 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 
 
 def drawPred(image, class_name, confidence, box, z_mode):
+    # params describes the amount of scaling in each of the rgb channels to produce a different color for each class
+    params = {"car": (0.90, 0.85, 0.678), "person": (0.20, 0.35, 0.978), "truck": (0.75, 1, 1)}
+    if class_name in params:
+        colour_scale = params[class_name]
+    else:
+        colour_scale = (0.90, 0.85, 0.678)
+
     # choose colour depending on distance away
     tone = 255 - (min(z_mode, 50)/50)*255
-    colour = (tone*0.90, tone*0.85, tone*0.678)
+    colour = (tone * colour_scale[0], tone * colour_scale[1], tone * colour_scale[2])
 
     # Draw a bounding box.
 
@@ -84,7 +91,7 @@ def drawPred(image, class_name, confidence, box, z_mode):
     top = max(top, labelSize[1])
     cv2.rectangle(image, (left, top - round(1.5*labelSize[1])),
         (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv2.FILLED)
-    cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1)
+    cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1, cv2.LINE_AA)
 
 
 #####################################################################
@@ -148,6 +155,34 @@ trackbarName = 'reporting confidence > (x 0.01)'
 cv2.createTrackbar(trackbarName, windowName, 0, 100, lambda: None)
 
 ################################################################################
+def image_prefiltering(left_img, right_img):
+    # Use an image pre-filtering technique to improve detection and distance ranging
+    def apply_filter(image):
+        return cv2.bilateralFilter(image, 9, 75, 75)
+
+    # make sure the same filtering is applied to both images
+    return apply_filter(left_img), apply_filter(right_img)
+
+
+def median_depth(img_disparity, box_size):
+    # RGB is an image with default value []
+    f = camera_focal_length_px
+    B = stereo_camera_baseline_m
+    max_height, max_width = img_disparity.shape[:2]
+    # get the median depth of object
+    left_point, top_point, box_width, box_height = box_size
+    d_values = []
+    for y in range(top_point, top_point + box_height - 1):
+        for x in range(left_point, left_point + box_width - 1):
+            x = min(max_width - 1, x)
+            y = min(max_height - 1, y)
+
+            if img_disparity[y, x] > 0:
+                d = (f * B) / img_disparity[y, x]
+                if d:
+                    d_values.append(d)
+    return np.median(d_values)
+
 
 def project_point_to_3D(img_disparity, x, y):
     # RGB is an image with default value []
@@ -170,9 +205,8 @@ def project_point_to_3D(img_disparity, x, y):
         Y = ((y - image_centre_h) * Z) / f
     return X, Y, Z
 
-
 def object_depth(img_disparity, box_size):
-    # get the mode depth of object
+    # get the median depth of object
     left_point, top_point, box_width, box_height = box_size
     z_values = []
     for y in range(top_point, top_point + box_height - 1):
@@ -180,10 +214,6 @@ def object_depth(img_disparity, box_size):
             _, _, z = project_point_to_3D(img_disparity, x, y)
             if z:
                 z_values.append(z)
-    if not z_values:
-        print(box)
-        print(img_disparity[0:box_width])
-    print(np.median(z_values))
     return np.median(z_values)
 
 
@@ -223,10 +253,12 @@ for filename_left in left_file_list:
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
+        filtered_imgL, filtered_imgR = image_prefiltering(imgL, imgR)
+
         # remember to convert to grayscale (as the disparity matching works on grayscale)
         # N.B. need to do for both as both are 3-channel images
-        grayL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
-        grayR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
+        grayL = cv2.cvtColor(filtered_imgL, cv2.COLOR_BGR2GRAY)
+        grayR = cv2.cvtColor(filtered_imgR, cv2.COLOR_BGR2GRAY)
 
         # perform pre-processing - raise to the power, as this subjectively appears
         # to improve subsequent disparity calculation
@@ -260,6 +292,7 @@ for filename_left in left_file_list:
         if crop_disparity:
             width = np.size(disparity_scaled, 1)
             disparity_scaled = disparity_scaled[0:390, 135:width]
+            imgL = imgL[0:390, 135:width]
 
         # display image (scaling it to the full 0->255 range based on the number
         # of disparities in use for the stereo part)
@@ -267,7 +300,6 @@ for filename_left in left_file_list:
 
         # Got left image, now YOLO time
         # create a 4D tensor (OpenCV 'blob') from image frame (pixels scaled 0->1, image resized)
-
         tensor = cv2.dnn.blobFromImage(imgL, 1 / 255, (inpWidth, inpHeight), [0, 0, 0], 1, crop=False)
         # set the input to the CNN network
         net.setInput(tensor)
@@ -281,7 +313,7 @@ for filename_left in left_file_list:
         # draw resulting detections on image
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            z_mode = object_depth(disparity_scaled, box)
+            z_mode = median_depth(disparity_scaled, box)
             if not np.isnan(z_mode):
                 drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, z_mode)
         fullscreen = False
@@ -291,7 +323,7 @@ for filename_left in left_file_list:
         cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN,
                               cv2.WINDOW_FULLSCREEN & fullscreen)
 
-        key = cv2.waitKey(100 * 1) & 0xFF  # wait 40ms (i.e. 1000ms / 25 fps = 40 ms)
+        key = cv2.waitKey(10 * 1) & 0xFF  # wait 40ms (i.e. 1000ms / 25 fps = 40 ms)
 
     else:
         print("-- files skipped (perhaps one is missing or not PNG)\n")

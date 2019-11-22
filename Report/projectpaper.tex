@@ -1,0 +1,47 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{times}
+\usepackage{durhampaper}
+\usepackage{url}
+\usepackage{harvard}
+\usepackage{cite}
+\citationmode{abbr}
+\bibliographystyle{plain}
+
+\title{Stereo Vision with Object Distance Ranging}
+\author{} % leave; your name goes into \student{}
+\student{Molly Hayward}
+
+\date{20/11/2019}
+
+\begin{document}
+
+\maketitle
+
+\noindent \section{Introduction}
+
+
+In order to quantitatively assess performance, I manually labelled the output of each approach. Image regions within bounding boxes were written to an external file, which I manually sifted through to annotate the findings. For each scene, a score is devised which takes into account the number of \textit{correctly labelled}, \textit{incorrectly labelled} and \textit{unidentified objects}. Naturally, this assessment evaluates only object detection and disregards the performance of distance ranging, hence this is qualitatively assessed following a series of experiments.
+
+\begin{center}
+	Table 1: Definition of subjective terms
+\end{center}
+\begin{tabular}{p{3cm}p{8cm}p{5cm}}
+	\hline
+	\textbf{Term} & \textbf{Definition} & \textbf{Example}\\
+	\hline\hline
+	Irony & The use of words that are the opposite of what you mean, as a way of being funny. \cite{cambridgeirony2019} &  Example of irony\\
+	\hline
+	Sarcasm & The use of remarks that clearly mean the opposite of what they say, made in order to hurt someone's feelings or to criticize something in a humorous way. \cite{cambridgesarcasm2019} &  Example of sarcasm\\
+	\hline
+\end{tabular}\\
+
+
+
+\section{Related Work}
+\noindent There exists an extensive body of literature covering machine learning and deep learning approaches to natural language processing problems, however in the application domain of sarcasm detection, they mostly display low accuracy. This could be due, in part, to the absence of a concrete, all-encompassing definition of sarcasm. N.B. this may also contribute to poor human accuracy in detecting a fundamentally human construct. \\
+
+
+\bibliography{projectpaper}
+
+
+\end{document}

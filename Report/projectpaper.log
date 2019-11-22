@@ -1,0 +1,133 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7200 64-bit) (preloaded format=pdflatex 2019.10.10)  20 NOV 2019 23:03
+entering extended mode
+**./projectpaper.tex
+(projectpaper.tex
+LaTeX2e <2019-10-01>
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/base\a
+rticle.cls"
+Document Class: article 2019/08/27 v1.4j Standard LaTeX document class
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/base\s
+ize12.clo"
+File: size12.clo 2019/08/27 v1.4j Standard LaTeX file (size option)
+)
+\c@part=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\c@figure=\count86
+\c@table=\count87
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/psnfss
+\times.sty"
+Package: times 2005/04/12 PSNFSS-v9.2a (SPQR) 
+) (durhampaper.sty
+Durham CS undergraduate paper style 'durhampaper.sty'.
+)
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/url\ur
+l.sty"
+\Urlmuskip=\muskip10
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/harvar
+d\harvard.sty"
+Package: harvard 
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/base\i
+fthen.sty"
+Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
+))
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/cite\c
+ite.sty"
+LaTeX Info: Redefining \cite on input line 302.
+LaTeX Info: Redefining \nocite on input line 332.
+Package: cite 2015/02/27  v 5.5
+) (projectpaper.aux)
+\openout1 = `projectpaper.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Trying to load font information for OT1+ptm on input line 1
+6.
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/psnfss
+\ot1ptm.fd"
+File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
+)
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 20.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 28.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 28.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 28.
+
+Overfull \hbox (30.1122pt too wide) in paragraph at lines 28--37
+[] 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 28--37
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 41--42
+
+ []
+
+(projectpaper.bbl
+LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 2
+1.
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/psnfss
+\ot1pcr.fd"
+File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
+)
+Underfull \hbox (badness 10000) in paragraph at lines 26--31
+\OT1/pcr/m/n/12 https : / / dictionary . cambridge . org / dictionary / english
+ / sarcasm$\OT1/ptm/m/n/12 ,
+ []
+
+) [1
+
+{C:/Users/Password is house/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}]
+ (projectpaper.aux) ) 
+Here is how much of TeX's memory you used:
+ 677 strings out of 492452
+ 9347 string characters out of 3114457
+ 71572 words of memory out of 3000000
+ 5074 multiletter control sequences out of 15000+200000
+ 13371 words of font info for 33 fonts, out of 3000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 24i,8n,24p,611b,254s stack positions out of 5000i,500n,10000p,200000b,50000s
+{C:/Users/Password is house/AppData/Local/Programs/MiKTeX 
+2.9/fonts/enc/dvips/base/8r.enc}<C:/Users/Password is house/AppData/Local/Progr
+ams/MiKTeX 2.9/fonts/type1/urw/courier/ucrr8a.pfb><C:/Users/Password is house/A
+ppData/Local/Programs/MiKTeX 2.9/fonts/type1/urw/times/utmb8a.pfb><C:/Users/Pas
+sword is house/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/urw/times/utmr8a.p
+fb><C:/Users/Password is house/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/ur
+w/times/utmri8a.pfb>
+Output written on projectpaper.pdf (1 page, 53210 bytes).
+PDF statistics:
+ 23 PDF objects out of 1000 (max. 8388607)
+ 0 named destinations out of 1000 (max. 500000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+
