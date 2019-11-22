@@ -67,7 +67,7 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 # colour: to draw detection rectangle in
 
 
-def drawPred(image, class_name, confidence, box, z_mode):
+def drawPred(image, class_name, box, z_mode):
     # params describes the amount of scaling in each of the rgb channels to produce a different color for each class
     params = {"car": (0.90, 0.85, 0.678), "person": (0.20, 0.35, 0.978), "truck": (0.75, 1, 1)}
     if class_name in params:
@@ -91,7 +91,7 @@ def drawPred(image, class_name, confidence, box, z_mode):
     top = max(top, labelSize[1])
     cv2.rectangle(image, (left, top - round(1.5*labelSize[1])),
         (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv2.FILLED)
-    cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1, cv2.LINE_AA)
+    cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1, cv2.LINE_AA)
 
 
 #####################################################################
@@ -130,19 +130,14 @@ def postprocess(image, results, threshold_confidence, threshold_nms):
 
     # Perform non maximum suppression to eliminate redundant overlapping boxes with
     # lower confidences
-    classIds_nms = []
-    confidences_nms = []
-    boxes_nms = []
+    list_of_tuples = []
 
     indices = cv2.dnn.NMSBoxes(boxes, confidences, threshold_confidence, threshold_nms)
     for i in indices:
         i = i[0]
-        classIds_nms.append(classIds[i])
-        confidences_nms.append(confidences[i])
-        boxes_nms.append(boxes[i])
-
+        list_of_tuples.append((classIds[i], confidences[i], boxes[i]))
     # return post processed lists of classIds, confidences and bounding boxes
-    return (classIds_nms, confidences_nms, boxes_nms)
+    return list_of_tuples
 ################################################################################
 # Get the names of the output layers of the CNN network
 # net : an OpenCV DNN module network object
@@ -155,14 +150,34 @@ trackbarName = 'reporting confidence > (x 0.01)'
 cv2.createTrackbar(trackbarName, windowName, 0, 100, lambda: None)
 
 ################################################################################
+
 def image_prefiltering(left_img, right_img):
     # Use an image pre-filtering technique to improve detection and distance ranging
     def apply_filter(image):
-        return cv2.bilateralFilter(image, 9, 75, 75)
+        return cv2.bilateralFilter(image, 3, 75, 75)
 
     # make sure the same filtering is applied to both images
     return apply_filter(left_img), apply_filter(right_img)
 
+
+def disparity_post_processing(matcher, disparity_L, disparity_R, imgL):
+    # Uses Weighted Least Squares filter
+    # FILTER Parameters
+    lmbda = 8000
+    sigma = 1.2
+
+    wls = cv2.ximgproc.createDisparityWLSFilter(matcher_left=matcher)
+    wls.setLambda(lmbda)
+    wls.setSigmaColor(sigma)
+    disparity_filtered = wls.filter(disparity_L, imgL, None, disparity_R)
+    return disparity_filtered
+
+def apply_heuristics(object_class: str):
+    # RULE to crop pedestrian and car object regions
+
+
+
+    pass
 
 def median_depth(img_disparity, box_size):
     # RGB is an image with default value []
@@ -220,6 +235,21 @@ def object_depth(img_disparity, box_size):
 # setup the disparity stereo processor to find a maximum of 128 disparity values
 # (adjust parameters if needed - this will effect speed to processing)
 stereoProcessor = cv2.StereoSGBM_create(0, max_disparity, 21)
+window_size = 3
+left_matcher = cv2.StereoSGBM_create(
+    minDisparity=0,
+    numDisparities=max_disparity,             # max_disp has to be dividable by 16 f. E. HH 192, 256
+    blockSize=5,
+    P1=8 * 3 * window_size ** 2,    # wsize default 3; 5; 7 for SGBM reduced size image; 15 for SGBM full size image (1300px and above); 5 Works nicely
+    P2=32 * 3 * window_size ** 2,
+    disp12MaxDiff=1,
+    uniquenessRatio=15,
+    speckleWindowSize=0,
+    speckleRange=2,
+    preFilterCap=63,
+    mode=cv2.STEREO_SGBM_MODE_SGBM_3WAY
+)
+right_matcher = cv2.ximgproc.createRightMatcher(left_matcher)
 
 # OPEN YOLO WINDOW # ---------------------------------
 # create window by name (as resizable)
@@ -270,7 +300,11 @@ for filename_left in left_file_list:
         # compute disparity image from undistorted and rectified stereo images
         # that we have loaded
         # (which for reasons best known to the OpenCV developers is returned scaled by 16)
-        disparity = stereoProcessor.compute(grayL, grayR)
+        disparity_L = left_matcher.compute(grayL, grayR)
+        disparity_R = right_matcher.compute(grayR, grayL)
+        disparity = disparity_post_processing(left_matcher, disparity_L, disparity_R, filtered_imgL)
+        # disparity = stereoProcessor.compute(grayL, grayR)
+
 
         # filter out noise and speckles (adjust parameters as needed)
         dispNoiseFilter = 5  # increase for more aggressive filtering
@@ -308,14 +342,24 @@ for filename_left in left_file_list:
 
         # remove the bounding boxes with low confidence
         confThreshold = cv2.getTrackbarPos(trackbarName, windowName) / 100
-        classIDs, confidences, boxes = postprocess(imgL, results, confThreshold, nmsThreshold)
+        detected_objects = postprocess(imgL, results, confThreshold, nmsThreshold)
 
-        # draw resulting detections on image
-        for detected_object in range(0, len(boxes)):
-            box = boxes[detected_object]
-            z_mode = median_depth(disparity_scaled, box)
-            if not np.isnan(z_mode):
-                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, z_mode)
+        # Calculate the depths of objects detected in the scene
+        processed_objects = []
+        for detected_object in detected_objects:
+            classID, confidence, box = detected_object
+            object_class = classes[int(classID)]
+            single_z = median_depth(disparity_scaled, box)
+            if not np.isnan(single_z):
+                processed_objects.append((box, object_class, single_z))
+
+        # Sort the detected objects by their depth in the scene
+        sorted_objects = sorted(processed_objects, key=lambda x: x[2], reverse=True)
+
+        # Draw the bounding boxes around detected objects, draw furthest objects first
+        for detected_object in sorted_objects:
+            drawPred(imgL, detected_object[1], detected_object[0], detected_object[2])
+
         fullscreen = False
 
         # display image
@@ -323,6 +367,7 @@ for filename_left in left_file_list:
         cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN,
                               cv2.WINDOW_FULLSCREEN & fullscreen)
 
+        cv2.imshow("disparity", (disparity_scaled * (256. / max_disparity)).astype(np.uint8))
         key = cv2.waitKey(10 * 1) & 0xFF  # wait 40ms (i.e. 1000ms / 25 fps = 40 ms)
 
     else:
