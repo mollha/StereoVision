@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7200 64-bit) (preloaded format=pdflatex 2019.10.10)  20 NOV 2019 23:03
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7200 64-bit) (preloaded format=pdflatex 2019.10.10)  23 NOV 2019 13:56
 entering extended mode
 **./projectpaper.tex
 (projectpaper.tex
@@ -48,48 +48,133 @@ ite.sty"
 LaTeX Info: Redefining \cite on input line 302.
 LaTeX Info: Redefining \nocite on input line 332.
 Package: cite 2015/02/27  v 5.5
+)
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/graphi
+cs\graphicx.sty"
+Package: graphicx 2017/06/01 v1.1a Enhanced LaTeX Graphics (DPC,SPQR)
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/graphi
+cs\keyval.sty"
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/graphi
+cs\graphics.sty"
+Package: graphics 2019/07/20 v1.3b Standard LaTeX Graphics (DPC,SPQR)
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/graphi
+cs\trig.sty"
+Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
+)
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/graphi
+cs-cfg\graphics.cfg"
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 105.
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/graphi
+cs-def\pdftex.def"
+File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
 ) (projectpaper.aux)
 \openout1 = `projectpaper.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Trying to load font information for OT1+ptm on input line 1
-6.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Trying to load font information for OT1+ptm on input line 2
+0.
 
 ("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/psnfss
 \ot1ptm.fd"
 File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
 )
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/oberdi
+ek\epstopdf-base.sty"
+Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/generic/ober
+diek\infwarerr.sty"
+Package: infwarerr 2016/05/16 v1.4 Providing info/warning/error messages (HO)
+)
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/oberdi
+ek\grfext.sty"
+Package: grfext 2016/05/16 v1.2 Manage graphics extensions (HO)
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/generic/ober
+diek\kvdefinekeys.sty"
+Package: kvdefinekeys 2016/05/16 v1.4 Define keys (HO)
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/generic/ober
+diek\ltxcmds.sty"
+Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
+)))
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/latex/oberdi
+ek\kvoptions.sty"
+Package: kvoptions 2016/05/16 v3.12 Key value format for package options (HO)
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/generic/ober
+diek\kvsetkeys.sty"
+Package: kvsetkeys 2016/05/16 v1.17 Key value parser (HO)
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/generic/ober
+diek\etexcmds.sty"
+Package: etexcmds 2016/05/16 v1.6 Avoid name clashes with e-TeX commands (HO)
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/generic/ober
+diek\ifluatex.sty"
+Package: ifluatex 2016/05/16 v1.4 Provides the ifluatex switch (HO)
+Package ifluatex Info: LuaTeX not detected.
+))))
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/generic/ober
+diek\pdftexcmds.sty"
+Package: pdftexcmds 2019/07/25 v0.30 Utility functions of pdfTeX for LuaTeX (HO
+)
+
+("C:\Users\Password is house\AppData\Local\Programs\MiKTeX 2.9\tex/generic/ober
+diek\ifpdf.sty"
+Package: ifpdf 2018/09/07 v3.3 Provides the ifpdf switch
+)
+Package pdftexcmds Info: LuaTeX not detected.
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+)
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+38.
+Package grfext Info: Graphics extension search list:
+(grfext)             [.pdf,.png,.jpg,.mps,.jpeg,.jbig2,.jb2,.PDF,.PNG,.JPG,.JPE
+G,.JBIG2,.JB2,.eps]
+(grfext)             \AppendGraphicsExtensions on input line 456.
+)
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 20.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 28.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 28.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 28.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 25.
+<./images/Solutiondiagram.png, id=1, 1850.915pt x 1003.75pt>
+File: ./images/Solutiondiagram.png Graphic file (type png)
+<use ./images/Solutiondiagram.png>
+Package pdftex.def Info: ./images/Solutiondiagram.png  used on input line 30.
+(pdftex.def)             Requested size: 462.72762pt x 250.93689pt.
 
-Overfull \hbox (30.1122pt too wide) in paragraph at lines 28--37
-[] 
+Overfull \hbox (1.59573pt too wide) in paragraph at lines 30--32
+ [] 
  []
 
+[1
 
-Underfull \hbox (badness 10000) in paragraph at lines 28--37
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 41--42
+{C:/Users/Password is house/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map} 
+<./images/Solutiondiagram.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 40--41
 
  []
 
@@ -101,33 +186,37 @@ LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 2
 \ot1pcr.fd"
 File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
 )
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 21.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 21.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 21.
+
 Underfull \hbox (badness 10000) in paragraph at lines 26--31
 \OT1/pcr/m/n/12 https : / / dictionary . cambridge . org / dictionary / english
  / sarcasm$\OT1/ptm/m/n/12 ,
  []
 
-) [1
-
-{C:/Users/Password is house/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}]
- (projectpaper.aux) ) 
+) [2] (projectpaper.aux) ) 
 Here is how much of TeX's memory you used:
- 677 strings out of 492452
- 9347 string characters out of 3114457
- 71572 words of memory out of 3000000
- 5074 multiletter control sequences out of 15000+200000
+ 1601 strings out of 492452
+ 24884 string characters out of 3114457
+ 86213 words of memory out of 3000000
+ 5937 multiletter control sequences out of 15000+200000
  13371 words of font info for 33 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 24i,8n,24p,611b,254s stack positions out of 5000i,500n,10000p,200000b,50000s
-{C:/Users/Password is house/AppData/Local/Programs/MiKTeX 
-2.9/fonts/enc/dvips/base/8r.enc}<C:/Users/Password is house/AppData/Local/Progr
-ams/MiKTeX 2.9/fonts/type1/urw/courier/ucrr8a.pfb><C:/Users/Password is house/A
-ppData/Local/Programs/MiKTeX 2.9/fonts/type1/urw/times/utmb8a.pfb><C:/Users/Pas
-sword is house/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/urw/times/utmr8a.p
-fb><C:/Users/Password is house/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/ur
-w/times/utmri8a.pfb>
-Output written on projectpaper.pdf (1 page, 53210 bytes).
+ 46i,5n,30p,633b,308s stack positions out of 5000i,500n,10000p,200000b,50000s
+{C:/Users/Password is house/AppData/Local/Programs/Mi
+KTeX 2.9/fonts/enc/dvips/base/8r.enc}<C:/Users/Password is house/AppData/Local/
+Programs/MiKTeX 2.9/fonts/type1/urw/courier/ucrr8a.pfb><C:/Users/Password is ho
+use/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/urw/times/utmb8a.pfb><C:/User
+s/Password is house/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/urw/times/utm
+r8a.pfb><C:/Users/Password is house/AppData/Local/Programs/MiKTeX 2.9/fonts/typ
+e1/urw/times/utmri8a.pfb>
+Output written on projectpaper.pdf (2 pages, 314188 bytes).
 PDF statistics:
- 23 PDF objects out of 1000 (max. 8388607)
+ 29 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 6 words of extra memory for PDF output out of 10000 (max. 10000000)
 

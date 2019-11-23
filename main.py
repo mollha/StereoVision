@@ -6,14 +6,15 @@ import numpy as np
 master_path_to_dataset = "TTBB-durham-02-10-17-sub10"
 directory_to_cycle_left = "left-images"
 directory_to_cycle_right = "right-images"
+enable_keys = True  # enable the use of save "s" and exit "x" keys
 
 # resolve full directory location of data set for left / right images
 full_path_directory_left = os.path.join(master_path_to_dataset, directory_to_cycle_left)
 full_path_directory_right = os.path.join(master_path_to_dataset, directory_to_cycle_right)
 
+
 # get a list of the left image files and sort them (by timestamp in filename)
 left_file_list = sorted(os.listdir(full_path_directory_left))
-
 # Skip forward to specific timestamp e.g. set to 1506943191.487683
 skip_forward_file_pattern = ""
 
@@ -28,7 +29,7 @@ image_centre_w = 474.5
 # ----------------------------------------------------------------------
 
 # Disparity
-crop_disparity = True # display full or cropped disparity image
+crop_disparity = True  # display full or cropped disparity image
 max_disparity = 128
 
 # YOLO configuration
@@ -66,11 +67,30 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 # left, top, right, bottom: rectangle parameters for detection
 # colour: to draw detection rectangle in
 
+def k_means(disparity_map):
+    # Use k-means to separate an object region into the foreground and background
+    Z = disparity_map.reshape((-1, 3))
+
+    # convert to np.float32
+    Z = np.float32(Z)
+
+    # define criteria, number of clusters(K) and apply kmeans()
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    K = 2
+    ret, label, center = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+    center = np.uint8(center)
+    print('center', center)
+    res = center[label.flatten()]
+    res2 = res.reshape((disparity_map.shape))
+    cv2.imshow('new', res2)
+    return res2
+
+
 
 def drawPred(image, class_name, box, distance_prediction):
     # params describes the amount of scaling in each of the rgb channels to produce a different color for each class
     distance_prediction -= 1.1  # subtract avg car bonnet length
-    params = {"car": (1, 0.85, 0.678), "person": (0, 0, 1), "truck": (0.33, 1, 0.5)}
+    params = {"car": (1, 0.85, 0.678), "person": (0, 0, 1), "truck": (0.33, 1, 0.5), "bus": (0.506, 0.149, 0.965)}
     if class_name in params:
         colour_scale = params[class_name]
     else:
@@ -85,7 +105,7 @@ def drawPred(image, class_name, box, distance_prediction):
     left, top, width, height = box
     cv2.rectangle(image, (left, top), (left + width, top + height), colour, 2)
 
-    label = '%s:%.2fm' % (class_name, distance_prediction)     # construct label
+    label = ' %s : %.2fm' % (class_name, distance_prediction)     # construct label
 
     # Display the label at the top of the bounding box
     labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
@@ -94,7 +114,7 @@ def drawPred(image, class_name, box, distance_prediction):
         (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv2.FILLED)
     cv2.rectangle(image, (left, top - round(1.5*labelSize[1])), (left + round(1.5*labelSize[0]), top + baseLine),
                   (0, 0, 0))
-    cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1, cv2.LINE_AA)
+    cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 1, cv2.LINE_AA)
 
 
 #####################################################################
@@ -284,6 +304,8 @@ for filename_left in left_file_list:
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
+        print(type(imgL))
+        print(type(imgR))
         filtered_imgL, filtered_imgR = image_prefiltering(imgL, imgR)
 
         # remember to convert to grayscale (as the disparity matching works on grayscale)
@@ -296,6 +318,11 @@ for filename_left in left_file_list:
 
         grayL = np.power(grayL, 0.75).astype('uint8')
         grayR = np.power(grayR, 0.75).astype('uint8')
+
+        # APPLY CLAHE
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        grayL = clahe.apply(grayL)
+        grayR = clahe.apply(grayR)
 
         # -------------------------- DISPARITY ------------------------
         # compute disparity image from undistorted and rectified stereo images
@@ -344,6 +371,8 @@ for filename_left in left_file_list:
         # remove the bounding boxes with low confidence
         detected_objects = postprocess(imgL, results, confThreshold, nmsThreshold)
 
+
+
         # Calculate the depths of objects detected in the scene
         processed_objects = []
         for detected_object in detected_objects:
@@ -362,14 +391,27 @@ for filename_left in left_file_list:
 
         fullscreen = False
 
+        # APPLY k-means
+        # disparity_scaled = k_means(disparity_scaled)
+
+        cv2.imshow("disparity", (disparity_scaled * (256. / max_disparity)).astype(np.uint8))
+
         # display image
         cv2.imshow(windowName, imgL)
         cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN,
                               cv2.WINDOW_FULLSCREEN & fullscreen)
 
-        cv2.imshow("disparity", (disparity_scaled * (256. / max_disparity)).astype(np.uint8))
         key = cv2.waitKey(10 * 1) & 0xFF  # wait 40ms (i.e. 1000ms / 25 fps = 40 ms)
-
+        if enable_keys:
+            if key == ord('x'):  # exit
+                break  # exit
+            elif key == ord('s'):  # save
+                label = 'Timestamp : %s' % filename_left[0:-6]
+                labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                cv2.rectangle(imgL, (15, 15 - round(1.2 * labelSize[1])),
+                              (15 + round(1.2 * labelSize[0]), 15 + baseLine), (255, 255, 255), cv2.FILLED)
+                cv2.putText(imgL, label, (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+                cv2.imwrite(os.path.join('Screenshots', filename_left), imgL)
     else:
         print("-- files skipped (perhaps one is missing or not PNG)\n")
 

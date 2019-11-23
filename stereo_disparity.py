@@ -105,7 +105,6 @@ for filename_left in left_file_list:
         grayL = np.power(grayL, 0.75).astype('uint8')
         grayR = np.power(grayR, 0.75).astype('uint8')
 
-        # -------------------------- THIS PART IS USEFUL ------------------------
         # compute disparity image from undistorted and rectified stereo images
         # that we have loaded
         # (which for reasons best known to the OpenCV developers is returned scaled by 16)
