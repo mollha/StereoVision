@@ -11,10 +11,12 @@
 # Redmon, J., & Farhadi, A. (2018). Yolov3: An incremental improvement. arXiv pre-print arXiv:1804.02767.
 # https://pjreddie.com/media/files/papers/YOLOv3.pdf
 ################################################################################################################
+import math
 
 import cv2
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
 # -------------------------------------- Configure paths to Data Set ----------------------------------------
 master_path_to_dataset = "TTBB-durham-02-10-17-sub10"
@@ -22,7 +24,7 @@ directory_to_cycle_left = "left-images"
 directory_to_cycle_right = "right-images"
 full_path_directory_left = os.path.join(master_path_to_dataset, directory_to_cycle_left)
 full_path_directory_right = os.path.join(master_path_to_dataset, directory_to_cycle_right)
-skip_forward_file_pattern = ""  # Skip forward to specific timestamp e.g. set to 1506943191.487683
+skip_forward_file_pattern = "1506942658.476606"  # Skip forward to specific timestamp e.g. set to 1506943191.487683
 
 # Get a list of the left image files and sort them (by timestamp in filename)
 left_file_list = sorted(os.listdir(full_path_directory_left))
@@ -67,9 +69,15 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 # HELPER FUNCTIONS FOR IMPROVING DISTANCE RANGING AND / OR OBJECT DETECTION
 
 def k_means_depth(disparity_map, box_size):
+    f = camera_focal_length_px
+    B = stereo_camera_baseline_m
     left_point, top_point, box_width, box_height = box_size  # unpack box size
+    max_height, max_width = disparity_map.shape[:2]
+    box_width = min(left_point + box_width, max_width - 1) - left_point
+    box_height = min(top_point + box_height, max_height - 1) - top_point
     cropped_map = disparity_map[top_point: top_point + box_height, left_point: left_point + box_width].copy()
-    print(top_point, top_point + box_height)
+    print(cropped_map.shape)
+    # cv2.imwrite('cropmapp_unmeans.png', cropped_map)
     # Use k-means to separate an object region into the foreground and background
     z = cropped_map.reshape((-1, 1))
     print(z.shape)
@@ -78,12 +86,24 @@ def k_means_depth(disparity_map, box_size):
     # define criteria, number of clusters(K) and apply k_means()
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
     k = 2
+    # set random INITIAL centers
     ret, x_label, center = cv2.kmeans(z, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+    centroids = center
     center = np.uint8(center)
+    print(center)
     response = center[x_label.flatten()].reshape(cropped_map.shape)
-    cv2.imshow('cropped', response)
+    # plt.hist(response, 128, facecolor='red', alpha=0.5)
+    # plt.show()
+    # cv2.imshow('cropped', response)
+    # cv2.imwrite('cropm.png', response)
 
-    return response
+    # Assumes the object
+    max_center = float('-inf')
+    for center_list in centroids:
+        if max(center_list) > max_center:
+            max_center = max(center_list)
+    print(max_center)
+    return (f * B) / max_center
 
 
 def draw_pred(image: np.ndarray, class_name: str, box_dimensions: list, distance: float) -> None:
@@ -183,14 +203,25 @@ def image_pre_filtering(left_img, right_img):
     # Use an image pre-filtering technique to improve disparity calculation
     # Apply this pre-filtering to both the left and right images after their grayscale conversion
 
-    # perform pre-processing - raise to the power, as this subjectively appears
-    # to improve subsequent disparity calculation
-
     # # APPLY CLAHE
     # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    def logarithmic(image):
+        c = max_disparity / math.log(1 + np.max(image))
+        sigma = 1
+        for i in range(0, image.shape[1]):  # image width
+            for j in range(0, image.shape[0]):  # image height
+                # compute logarithmic transform
+                image[j, i] = int(c * math.log(1 + ((math.exp(sigma) - 1) * image[j, i])))
+        return image
+
+    def exponential(image):
+        # perform pre-processing - raise to the power, as this subjectively appears
+        # to improve subsequent disparity calculation
+        return np.power(image, 0.75).astype('uint8')
 
     def apply_filter(image):
-        return np.power(image, 0.75).astype('uint8')
+        # choose filters to apply
+        return exponential(image)
 
     return apply_filter(left_img), apply_filter(right_img)
 
@@ -200,19 +231,26 @@ def disparity_post_processing(matcher, disparity_L, disparity_R, imgL):
     # FILTER Parameters
     lmbda = 8000
     sigma = 0.8
-
     wls = cv2.ximgproc.createDisparityWLSFilter(matcher_left=matcher)
     wls.setLambda(lmbda)
     wls.setSigmaColor(sigma)
     disparity_filtered = wls.filter(disparity_L, imgL, None, disparity_R)
     return disparity_filtered
 
-def apply_heuristics(object_class: str):
+def apply_heuristics(object_class: str, box_dimensions):
     # RULE to crop pedestrian and car object regions
+    # Alter the box_dimensions in order to crop object regions based on class
+    left_point, top_point, box_width, box_height = box_dimensions  # unpack box size
 
-
-
-    pass
+    # For vehicles, crop out the upper 50% - this should remove the window reflections
+    if object_class in ['car', 'truck', 'bus']:
+        box_height = int(box_height // 2)
+        top_point = top_point + box_height
+    elif object_class in ['person, bicycle', 'motorbike']:
+        # For pedestrians and bicycles, crop out the ground beneath them - the lower 20%
+        top_point = top_point + int(box_height // 5)
+        box_height = int(box_height // 1.25)
+    return [left_point, top_point, box_width, box_height]
 
 
 def median_depth(img_disparity, box_size):
@@ -256,7 +294,7 @@ right_matcher = cv2.ximgproc.createRightMatcher(left_matcher)
 for filename_left in left_file_list:
 
     # ------------------------------------ GET THE CORRECT IMAGE PAIR -------------------------------------
-    # Skip forward to start a file we specify by timestamp (if this is set)
+    # Skip forward to start from a file we specify by timestamp (if this is set)
     if (len(skip_forward_file_pattern) > 0) and not(skip_forward_file_pattern in filename_left):
         continue
     elif (len(skip_forward_file_pattern) > 0) and (skip_forward_file_pattern in filename_left):
@@ -343,11 +381,12 @@ for filename_left in left_file_list:
         processed_objects = []  # this list will contain tuples representing detected objects and their depths
         for detected_object in detected_objects:
             classID, confidence, box = detected_object  # unpack the detected object
+            print(box)
             object_class = classes[int(classID)]  # get the class name from the class ID
-
+            cropped_box = apply_heuristics(object_class, box)
             # produce a single representative value for the depth of the object
-            distance_prediction = median_depth(disparity_scaled, box)  # produce a single depth value from an object
-            k_means_depth(disparity_scaled, box)
+            distance_prediction = median_depth(disparity_scaled, cropped_box)  # produce a single depth value from an object
+            distance_prediction = k_means_depth(disparity_scaled, cropped_box)
 
             if not np.isnan(distance_prediction):  # check that this value is not NaN
                 distance_prediction -= 1.1  # subtract avg car bonnet length
