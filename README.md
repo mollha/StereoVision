@@ -5,7 +5,7 @@ Step 1 - Ensure that the following files are in the SAME directory
 - main.py
 - coco.names
 - yolov3.cfg
-- yolov3.weights
+- yolov3.weights\
 Note: Supporting yolo files are not included in the submission
 They are readily available online
 

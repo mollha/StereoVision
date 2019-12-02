@@ -76,11 +76,9 @@ def k_means_depth(disparity_map, box_size):
     box_width = min(left_point + box_width, max_width - 1) - left_point
     box_height = min(top_point + box_height, max_height - 1) - top_point
     cropped_map = disparity_map[top_point: top_point + box_height, left_point: left_point + box_width].copy()
-    print(cropped_map.shape)
     # cv2.imwrite('cropmapp_unmeans.png', cropped_map)
     # Use k-means to separate an object region into the foreground and background
     z = cropped_map.reshape((-1, 1))
-    print(z.shape)
     z = np.float32(z)  # convert to np.float32
 
     # define criteria, number of clusters(K) and apply k_means()
@@ -102,7 +100,6 @@ def k_means_depth(disparity_map, box_size):
     for center_list in centroids:
         if max(center_list) > max_center:
             max_center = max(center_list)
-    print(max_center)
     return (f * B) / max_center
 
 
@@ -203,8 +200,10 @@ def image_pre_filtering(left_img, right_img):
     # Use an image pre-filtering technique to improve disparity calculation
     # Apply this pre-filtering to both the left and right images after their grayscale conversion
 
-    # # APPLY CLAHE
-    # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    def clahe(image):
+        clahe_filter = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        return clahe_filter.apply(image)
+
     def logarithmic(image):
         c = max_disparity / math.log(1 + np.max(image))
         sigma = 1
@@ -221,7 +220,7 @@ def image_pre_filtering(left_img, right_img):
 
     def apply_filter(image):
         # choose filters to apply
-        return exponential(image)
+        return clahe(image)
 
     return apply_filter(left_img), apply_filter(right_img)
 
@@ -328,8 +327,8 @@ for filename_left in left_file_list:
         # compute disparity image from undistorted and rectified stereo images
         # that we have loaded
         # (which for reasons best known to the OpenCV developers is returned scaled by 16)
-        disparity_L = left_matcher.compute(grayL, grayR)
-        disparity_R = right_matcher.compute(grayR, grayL)
+        disparity_L = left_matcher.compute(filtered_imgL, filtered_imgR)
+        disparity_R = right_matcher.compute(filtered_imgR, filtered_imgL)
         disparity = disparity_post_processing(left_matcher, disparity_L, disparity_R, filtered_imgL)
         # disparity = stereoProcessor.compute(grayL, grayR)
 
@@ -381,7 +380,6 @@ for filename_left in left_file_list:
         processed_objects = []  # this list will contain tuples representing detected objects and their depths
         for detected_object in detected_objects:
             classID, confidence, box = detected_object  # unpack the detected object
-            print(box)
             object_class = classes[int(classID)]  # get the class name from the class ID
             cropped_box = apply_heuristics(object_class, box)
             # produce a single representative value for the depth of the object
