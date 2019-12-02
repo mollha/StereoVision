@@ -1,7 +1,7 @@
 #####################################################################
 
 # Example : load, display and compute SGBM disparity
-# for a set of rectified stereo images from a  directory structure
+# for a set of rectified stereo images from a directory structure
 # of left-images / right-images with filesname DATE_TIME_STAMP_{L|R}.png
 
 # basic illustrative python script for use with provided stereo datasets
