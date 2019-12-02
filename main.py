@@ -25,6 +25,7 @@ directory_to_cycle_right = "right-images"
 full_path_directory_left = os.path.join(master_path_to_dataset, directory_to_cycle_left)
 full_path_directory_right = os.path.join(master_path_to_dataset, directory_to_cycle_right)
 skip_forward_file_pattern = "1506942658.476606"  # Skip forward to specific timestamp e.g. set to 1506943191.487683
+skip_forward_file_pattern = ""
 
 # Get a list of the left image files and sort them (by timestamp in filename)
 left_file_list = sorted(os.listdir(full_path_directory_left))
@@ -64,11 +65,34 @@ net.setPreferableBackend(cv2.dnn.DNN_BACKEND_DEFAULT)
 # change to cv2.dnn.DNN_TARGET_CPU (slower) if this causes issues (should fail gracefully if OpenCL not available)
 # net.setPreferableTarget(cv2.dnn.DNN_TARGET_OPENCL)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+
+# -------------------------------------- Configure Stereo Processor --------------------------------------------
+# Setup the disparity stereo processor to find a maximum of 128 disparity values
+# left-to-right and right-to-left matching required for WLS filter - helps with half occlusion
+window_size = 5
+left_matcher = cv2.StereoSGBM_create(
+    minDisparity=0, numDisparities=max_disparity,  # max_disp has to be dividable by 16 f. E. HH 192, 256
+    blockSize=5, P1=8 * 3 * window_size ** 2,    # wsize default 3; 7 for SGBM reduced size image; 5 Works nicely
+    P2=32 * 3 * window_size ** 2, disp12MaxDiff=1,
+    uniquenessRatio=15, speckleWindowSize=0,
+    speckleRange=2, preFilterCap=63,
+    mode=cv2.STEREO_SGBM_MODE_SGBM_3WAY
+)
+right_matcher = cv2.ximgproc.createRightMatcher(left_matcher)
 ###############################################################################################################
 
 # HELPER FUNCTIONS FOR IMPROVING DISTANCE RANGING AND / OR OBJECT DETECTION
 
-def k_means_depth(disparity_map, box_size):
+
+def k_means_depth(disparity_map: np.ndarray, box_size: list) -> np.float64:
+    """
+    Use k-means to segment the foreground from the background with value k = 2
+    Take the maximum centroid and project this disparity value into 3D to compute depth
+    :param disparity_map: disparity / depth map image
+    :param box_size: list containing box co-ordinates and sizes of the detected object bounding box
+    :return: a single representatitve value of the object's depth
+    """
+    # TODO clean and comment k_means depth
     f = camera_focal_length_px
     B = stereo_camera_baseline_m
     left_point, top_point, box_width, box_height = box_size  # unpack box size
@@ -95,6 +119,7 @@ def k_means_depth(disparity_map, box_size):
     # cv2.imshow('cropped', response)
     # cv2.imwrite('cropm.png', response)
 
+    # TODO sometimes nothing beats float(-inf)
     # Assumes the object
     max_center = float('-inf')
     for center_list in centroids:
@@ -142,11 +167,11 @@ def draw_pred(image: np.ndarray, class_name: str, box_dimensions: list, distance
     cv2.putText(image, object_label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 1, cv2.LINE_AA)
 
 
-def postprocess(image, results, threshold_confidence, threshold_nms):
+def postprocess(image: np.ndarray, results_list: list, threshold_confidence: float, threshold_nms: float) -> list:
     """
     Remove the bounding boxes with low confidence using non-maximal suppression
     :param image: image detection performed on
-    :param results: output from YOLO CNN network
+    :param results_list: output from YOLO CNN network
     :param threshold_confidence: threshold on keeping detection
     :param threshold_nms: threshold used in non maximum suppression
     :return: list of tuples
@@ -162,7 +187,7 @@ def postprocess(image, results, threshold_confidence, threshold_nms):
     classIds = []
     confidences = []
     boxes = []
-    for result in results:
+    for result in results_list:
         for detection in result:
             scores = detection[5:]
             classId = np.argmax(scores)
@@ -190,21 +215,41 @@ def postprocess(image, results, threshold_confidence, threshold_nms):
     return list_of_tuples
 
 
-def yolo_pre_filtering(left_img):
-    # Use an image pre-filtering technique to improve detection
+def yolo_pre_filtering(left_img: np.ndarray) -> np.ndarray:
+    """
+    Use an image pre-filtering technique to the left colour image improve YOLO object detection
+    :param left_img: the image to be filterd
+    :return: the filtered image
+    """
     # Apply the bilateral filter with optimal parameters (described in the report)
     return cv2.bilateralFilter(left_img, 5, 35, 160)
 
 
-def image_pre_filtering(left_img, right_img):
-    # Use an image pre-filtering technique to improve disparity calculation
-    # Apply this pre-filtering to both the left and right images after their grayscale conversion
+def image_pre_filtering(left_img: np.ndarray, right_img: np.ndarray) -> tuple:
+    """
+    Use an image pre-filtering technique to improve disparity calculation
+    Apply this pre-filtering to both the left and right images after their grayscale conversion
+    Edit the apply_filter return value to include the desired pre-processing techniques
+    :param left_img: the left image to be filtered
+    :param right_img: the right stereo image to be filtered
+    :return: tuple of filtered images
+    """
 
-    def clahe(image):
+    def clahe(image: np.ndarray) -> np.ndarray:
+        """
+        Apply Contrast Limited Adaptive Histogram Equalization
+        :param image: the image to be filtered
+        :return: the image filtered with CLAHE
+        """
         clahe_filter = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         return clahe_filter.apply(image)
 
-    def logarithmic(image):
+    def logarithmic(image: np.ndarray) -> np.ndarray:
+        """
+        Apply Logarithmic Transform
+        :param image: the image to be filtered
+        :return: the image filtered with logarithmic transform
+        """
         c = max_disparity / math.log(1 + np.max(image))
         sigma = 1
         for i in range(0, image.shape[1]):  # image width
@@ -213,39 +258,61 @@ def image_pre_filtering(left_img, right_img):
                 image[j, i] = int(c * math.log(1 + ((math.exp(sigma) - 1) * image[j, i])))
         return image
 
-    def exponential(image):
-        # perform pre-processing - raise to the power, as this subjectively appears
-        # to improve subsequent disparity calculation
+    def exponential(image: np.ndarray) -> np.ndarray:
+        """
+        Perform pre-processing - raise to the power, as this subjectively appears
+        to improve subsequent disparity calculation
+        :param image:
+        :return:
+        """
         return np.power(image, 0.75).astype('uint8')
 
-    def apply_filter(image):
+    def apply_filter(image: np.ndarray) -> np.ndarray:
+        """
+        Choose which filter to apply to both images, this could be a combination too
+        :param image: the image to be filtered
+        :return:
+        """
         # choose filters to apply
         return clahe(image)
 
     return apply_filter(left_img), apply_filter(right_img)
 
 
-def disparity_post_processing(matcher, disparity_L, disparity_R, imgL):
-    # Uses Weighted Least Squares filter
-    # FILTER Parameters
-    lmbda = 8000
-    sigma = 0.8
-    wls = cv2.ximgproc.createDisparityWLSFilter(matcher_left=matcher)
-    wls.setLambda(lmbda)
-    wls.setSigmaColor(sigma)
-    disparity_filtered = wls.filter(disparity_L, imgL, None, disparity_R)
-    return disparity_filtered
+def wls_filter(matcher: cv2.StereoSGBM, dis_l: np.ndarray, dis_r: np.ndarray, img_l: np.ndarray) -> np.ndarray:
+    """
+    Uses Weighted Least Squares filter and creates disparity map
+    :param matcher: cv2.stereoSGBM object
+    :param dis_l: left-to-right disparity image
+    :param dis_r: right-to-left disparity image
+    :param img_l: left colour image (unfiltered)
+    :return: the filtered disparity map
+    """
+    lmbda, sigma = 8000, 0.8  # Configure filter parameters
+    wls = cv2.ximgproc.createDisparityWLSFilter(matcher_left=matcher)  # create disparity WLS filter
+    wls.setLambda(lmbda)  # set lambda to configured value
+    wls.setSigmaColor(sigma)  # set sigma to configured value
+    return wls.filter(dis_l, img_l, None, dis_r)  # return the filtered disparity map
 
-def apply_heuristics(object_class: str, box_dimensions):
+
+def apply_heuristics(obj_class: str, box_dimensions: list) -> list:
+    """
+    Implement a heuristic rule to crop areas of the detected object region in the disparity map
+    For example, cropping the upper 50% of a car in order to mitigate against the most reflective surface on
+    the vehicle (windows) - although the body of the vehicle may still be reflective, it is typically, less reflective.
+    :param obj_class: a string representing the class of the detected object
+    :param box_dimensions: the dimensions of the bounding box of the detected object
+    :return: the modified dimensions of the seminal areas of detected object
+    """
     # RULE to crop pedestrian and car object regions
     # Alter the box_dimensions in order to crop object regions based on class
     left_point, top_point, box_width, box_height = box_dimensions  # unpack box size
 
     # For vehicles, crop out the upper 50% - this should remove the window reflections
-    if object_class in ['car', 'truck', 'bus']:
+    if obj_class in ['car', 'truck', 'bus']:
         box_height = int(box_height // 2)
         top_point = top_point + box_height
-    elif object_class in ['person, bicycle', 'motorbike']:
+    elif obj_class in ['person, bicycle', 'motorbike']:
         # For pedestrians and bicycles, crop out the ground beneath them - the lower 20%
         top_point = top_point + int(box_height // 5)
         box_height = int(box_height // 1.25)
@@ -258,35 +325,17 @@ def median_depth(img_disparity, box_size):
     B = stereo_camera_baseline_m
     max_height, max_width = img_disparity.shape[:2]
     left_point, top_point, box_width, box_height = box_size  # unpack box size
-    d_values = []  # create empty list which will contain depth values
+    d_values = []  # create empty list which will contain disparity values
     for y in range(top_point, top_point + box_height - 1):
         for x in range(left_point, left_point + box_width - 1):
             x = min(max_width - 1, x)
             y = min(max_height - 1, y)
 
             if img_disparity[y, x] > 0:
-                d = (f * B) / img_disparity[y, x]
+                d = img_disparity[y, x]
                 if d:
                     d_values.append(d)
-    return np.median(d_values)
-
-
-# setup the disparity stereo processor to find a maximum of 256 disparity values
-window_size = 5
-left_matcher = cv2.StereoSGBM_create(
-    minDisparity=0,
-    numDisparities=max_disparity,  # max_disp has to be dividable by 16 f. E. HH 192, 256
-    blockSize=5,
-    P1=8 * 3 * window_size ** 2,    # wsize default 3; 5; 7 for SGBM reduced size image; 15 for SGBM full size image (1300px and above); 5 Works nicely
-    P2=32 * 3 * window_size ** 2,
-    disp12MaxDiff=1,
-    uniquenessRatio=15,
-    speckleWindowSize=0,
-    speckleRange=2,
-    preFilterCap=63,
-    mode=cv2.STEREO_SGBM_MODE_SGBM_3WAY
-)
-right_matcher = cv2.ximgproc.createRightMatcher(left_matcher)
+    return (f * B) / np.median(d_values)
 
 ################################################################################################################
 # Cycles through all file pairs
@@ -309,9 +358,9 @@ for filename_left in left_file_list:
 
     # check the file is a PNG file (left) and check a corresponding right image actually exists
     if ('.png' in filename_left) and (os.path.isfile(full_path_filename_right)):
-        # N.B. despite one being grayscale both are in fact stored as 3-channel RGB images so load both as such
         print("-- files loaded successfully\n")
 
+        # ---------------------------------------- READ IN THE IMAGE PAIR ---------------------------------------------
         # Read in the image pair, N.B. despite one being grayscale both are in fact stored as 3-channel RGB images
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
@@ -320,47 +369,36 @@ for filename_left in left_file_list:
         grayL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
         grayR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
 
-        # apply image pre-filtering to the stereo pair, as described in the report
+        # apply image pre-filtering to the stereo pair to improve disparity calculation, as described in the report
         filtered_imgL, filtered_imgR = image_pre_filtering(grayL, grayR)
 
-        # -------------------------- DISPARITY ------------------------
-        # compute disparity image from undistorted and rectified stereo images
-        # that we have loaded
-        # (which for reasons best known to the OpenCV developers is returned scaled by 16)
+        # ------------------------------------------ COMPUTE THE DISPARITY --------------------------------------------
+        # Compute disparity image from undistorted and rectified stereo images that we have loaded
         disparity_L = left_matcher.compute(filtered_imgL, filtered_imgR)
         disparity_R = right_matcher.compute(filtered_imgR, filtered_imgL)
-        disparity = disparity_post_processing(left_matcher, disparity_L, disparity_R, filtered_imgL)
-        # disparity = stereoProcessor.compute(grayL, grayR)
+        disparity = wls_filter(left_matcher, disparity_L, disparity_R, filtered_imgL)
 
+        # We can choose to use just the left-to-right match rather than the wls_filter
+        # Computing the disparity in this way produces a map with holes (not recommended)
+        # disparity = disparity_L
 
         # filter out noise and speckles (adjust parameters as needed)
         dispNoiseFilter = 5  # increase for more aggressive filtering
         cv2.filterSpeckles(disparity, 0, 4000, max_disparity - dispNoiseFilter)
 
-        # scale the disparity to 8-bit for viewing
-        # divide by 16 and convert to 8-bit image (then range of values should
-        # be 0 -> max_disparity) but in fact is (-1 -> max_disparity - 1)
+        # scale the disparity to 8-bit for viewing - divide by 16 and convert to 8-bit image
+        # (then range of values should be 0 -> max_disparity) but in fact is (-1 -> max_disparity - 1)
         # so we fix this also using a initial threshold between 0 and max_disparity
         # as disparity=-1 means no disparity available
-
         _, disparity = cv2.threshold(disparity, 0, max_disparity * 16, cv2.THRESH_TOZERO)
         disparity_scaled = (disparity / 16.).astype(np.uint8)
 
-        # crop disparity to chop out left part where there is no disparity
-        # as this area is not seen by both cameras and also
-        # chop out the bottom area (where we see the front of car bonnet)
-
-        # APPLY k-means
-
-        # display image
-
+        # Crop disparity to chop out left part where there is no disparity as this area is not seen by both cameras
+        # Chop out the bottom area (where we see the front of the car bonnet)
         if crop_disparity:
             width = np.size(disparity_scaled, 1)
             disparity_scaled = disparity_scaled[0:390, 135:width]
             imgL = imgL[0:390, 135:width]
-
-        # display image (scaling it to the full 0->255 range based on the number
-        # of disparities in use for the stereo part)
 
         # --------------------- PERFORM YOLO OBJECT DETECTION AND YOLO INPUT PRE-FILTERING ----------------------------
         # Apply pre-filtering to the left colour image (input to YOLO) as described in the report
@@ -383,7 +421,7 @@ for filename_left in left_file_list:
             object_class = classes[int(classID)]  # get the class name from the class ID
             cropped_box = apply_heuristics(object_class, box)
             # produce a single representative value for the depth of the object
-            distance_prediction = median_depth(disparity_scaled, cropped_box)  # produce a single depth value from an object
+            distance_prediction = median_depth(disparity_scaled, cropped_box)  # produce a single depth value
             distance_prediction = k_means_depth(disparity_scaled, cropped_box)
 
             if not np.isnan(distance_prediction):  # check that this value is not NaN
@@ -404,6 +442,8 @@ for filename_left in left_file_list:
         cv2.imshow(windowName, imgL)  # show the left colour image with the bounding boxes
         cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN,
                               cv2.WINDOW_FULLSCREEN & fullscreen)  # initialise window properties
+        # display disparity image (scaling it to the full 0-> 255 range based on the number
+        # of disparities in use for the stereo part)
         cv2.imshow("Disparity Map", (disparity_scaled * (256. / max_disparity)).astype(np.uint8))  # show the disparity
 
         # ------------------------------------- ENABLE THE EXIT AND SAVE KEYS -----------------------------------------
